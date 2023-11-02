@@ -1,0 +1,175 @@
+#######################################################################
+# Test for copying block of size 4;
+#######################################################################
+	.pos 0
+main:	irmovq Stack, %rsp  	# Set up stack pointer
+
+	# Set up arguments for copy function and then invoke it
+	irmovq $4, %rdx		# src and dst have 4 elements
+	irmovq dest, %rsi	# dst array
+	irmovq src, %rdi	# src array
+	call ncopy		 
+	halt			# should halt with num nonzeros in %rax
+StartFun:
+#/* $begin ncopy-ys */
+##################################################################
+# ncopy.ys - Copy a src block of len words to dst.
+# Return the number of positive words (>0) contained in src.
+#
+# Include your name and ID here.
+#
+# Describe how and why you modified the baseline code.
+#
+##################################################################
+# Do not modify this portion
+# Function prologue.
+# %rdi = src, %rsi = dst, %rdx = len
+ncopy:
+
+##################################################################
+## You can modify this portion
+#	# Loop header
+#	xorq %rax,%rax		# count = 0;
+#	andq %rdx,%rdx		# len <= 0?
+#	jle Done		# if so, goto Done:
+#
+#Loop:	
+#	mrmovq (%rdi), %r10	# read val from src...
+#	iaddq $8, %rsi		# dst++
+#	rmmovq %r10, $-8(%rsi)	# ...and store it to dst
+#	andq %r10, %r10		# val <= 0?
+#	jle Npos		# if so, goto Npos:
+#	iaddq $1, %rax		# count++
+#Npos:	
+#	iaddq $8, %rdi		# src++
+#	#iaddq $8, %rsi		# dst++
+#	iaddq $-1, %rdx
+#	jg Loop			# if so, goto Loop:
+
+	xorq %rax,%rax		# count = 0;
+	andq %rdx,%rdx		# len <= 0?
+	jle Done		# if so, goto Done:
+Loop6:
+	iaddq $-6, %rdx
+	jl Else
+	mrmovq (%rdi), %r10	# read val from src...
+	mrmovq 0x8(%rdi), %r9
+	rmmovq %r10, (%rsi)	# ...and store it to dst
+	rmmovq %r9, 0x8(%rsi)
+	andq %r10, %r10		# val <= 0?
+	jle Npos		# if so, goto Npos:
+	iaddq $0x1, %rax		# count++
+Npos:
+	andq %r9, %r9		# val <= 0?
+	jle Npos1		# if so, goto Npos:
+	iaddq $0x1, %rax	
+Npos1:
+	mrmovq 0x10(%rdi), %r10	# read val from src...
+	mrmovq 0x18(%rdi), %r9
+	rmmovq %r10, 0x10(%rsi)	# ...and store it to dst
+	rmmovq %r9, 0x18(%rsi)
+	andq %r10, %r10		# val <= 0?
+	jle Npos2		# if so, goto Npos:
+	iaddq $0x1, %rax		# count++
+Npos2:
+	andq %r9, %r9		# val <= 0?
+	jle Npos3		# if so, goto Npos:
+	iaddq $0x1, %rax
+Npos3:
+	mrmovq 0x20(%rdi), %r10	# read val from src...
+	mrmovq 0x28(%rdi), %r9
+	rmmovq %r10, 0x20(%rsi)	# ...and store it to dst
+	rmmovq %r9, 0x28(%rsi)
+	andq %r10, %r10		# val <= 0?
+	jle Npos4		# if so, goto Npos:
+	iaddq $0x1, %rax
+Npos4:
+	andq %r9, %r9		# val <= 0?
+	jle Npos5		# if so, goto Npos:
+	iaddq $0x1, %rax
+Npos5:
+	iaddq $0x30, %rsi		# dst++
+	iaddq $0x30, %rdi		# src++
+	jmp Loop6
+Else:
+	iaddq $6, %rdx
+	je Done
+Loop:	
+	iaddq $-2, %rdx
+	jl Over
+	mrmovq (%rdi), %r10	# read val from src...
+	mrmovq 0x8(%rdi), %r9
+	rmmovq %r10, (%rsi)	# ...and store it to dst
+	rmmovq %r9, 0x8(%rsi)
+	andq %r10, %r10		# val <= 0?
+	jle Npos6		# if so, goto Npos:
+	iaddq $0x1, %rax		# count++
+Npos6:
+	andq %r9, %r9		# val <= 0?
+	jle Npos7		# if so, goto Npos:
+	iaddq $0x1, %rax	
+Npos7:
+	iaddq $0x10, %rsi		# dst++
+	iaddq $0x10, %rdi		# src++
+	jmp Loop	
+Over:	
+	iaddq $2, %rdx
+	je Done
+	mrmovq (%rdi), %r10
+	rmmovq %r10, (%rsi)
+	andq %r10, %r10
+	jle Done
+	iaddq $1, %rax
+##################################################################
+# Do not modify the following section of code
+# Function epilogue.
+Done:
+	ret
+##################################################################
+# Keep the following label at the end of your function
+End:
+#/* $end ncopy-ys */
+EndFun:
+
+###############################
+# Source and destination blocks 
+###############################
+	.align 8
+src:
+	.quad -1
+	.quad -2
+	.quad 3
+	.quad 4
+	.quad 0xbcdefa # This shouldn't get moved
+
+	.align 16
+Predest:
+	.quad 0xbcdefa
+dest:
+	.quad 0xcdefab
+	.quad 0xcdefab
+	.quad 0xcdefab
+	.quad 0xcdefab
+Postdest:
+	.quad 0xdefabc
+
+.align 8
+# Run time stack
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+
+Stack:
